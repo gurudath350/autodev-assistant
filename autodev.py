@@ -2,6 +2,7 @@ import os
 import json
 import subprocess
 import requests
+from datetime import datetime
 from prompt_toolkit import prompt
 
 # Load config
@@ -12,8 +13,19 @@ with open(CONFIG_PATH, "r") as f:
 API_KEY = config["api_key"]
 MODEL = config["model"]
 
+# Local knowledge base
+KNOWLEDGE_PATH = "knowledge.json"
+
 def auto_fix(error):
-    """Use OpenRouter to analyze errors."""
+    """Fix errors using local knowledge or OpenRouter"""
+    # Check local knowledge base
+    with open(KNOWLEDGE_PATH, "r") as f:
+        kb = json.load(f)
+        for key in kb:
+            if key in error.lower():
+                return kb[key]
+    
+    # Use OpenRouter if not found locally
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
@@ -21,30 +33,53 @@ def auto_fix(error):
     data = {
         "model": MODEL,
         "messages": [
-            {"role": "user", "content": f"Error: {error}\n\nFix this with step-by-step commands."}
+            {"role": "user", "content": f"Fix this error locally: {error}"}
         ]
     }
     response = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=data)
     return response.json()["choices"][0]["message"]["content"]
 
 def install(tool):
-    """OS-agnostic tool installation."""
+    """Install tools using OS-specific scripts"""
     os_type = subprocess.check_output("uname", shell=True).decode().strip().lower()
+    
+    # Termux detection
+    if "termux" in os.environ.get("PREFIX", ""):
+        os_type = "termux"
+    
     script = f"install_scripts/{os_type}.sh"
-    print(f"AutoDev: Installing {tool}...")
-    subprocess.run(f"bash {script} {tool}", shell=True)
-
-# Add Termux detection
-if "termux" in os.environ.get("PREFIX", ""):
-    os_type = "termux"
     
     if not os.path.exists(script):
         print(f"AutoDev: Unsupported OS: {os_type}")
         return
+    
+    print(f"AutoDev: Installing {tool}...")
+    subprocess.run(f"bash {script} {tool}", shell=True)
+
+def generate(template):
+    """Generate IaC templates"""
+    if template == "docker":
+        subprocess.run(f"cp templates/Dockerfile .", shell=True)
+    elif template == "terraform":
+        subprocess.run(f"cp -r templates/terraform .", shell=True)
+    else:
+        print("Template not found")
+
+def scan():
+    """Run security scans"""
+    print("Running Python security scan...")
+    subprocess.run("bandit -r .", shell=True)
+    print("Running Node.js security scan...")
+    subprocess.run("npm audit", shell=True)
+
+def monitor():
+    """Show system resources"""
+    import psutil
+    print(f"CPU: {psutil.cpu_percent()}% | Memory: {psutil.virtual_memory().percent}%")
 
 def main():
     print("AutoDev Assistant Ready 🤖")
-    print("Commands: install <tool>, fix <error>, or type any shell command")
+    print("Commands: install <tool>, fix <error>, generate <template>, scan, monitor")
     
     while True:
         user_input = prompt(">> ")
@@ -57,8 +92,21 @@ def main():
             error = user_input.split(" ", 1)[1]
             print(auto_fix(error))
         
+        elif user_input.startswith("generate "):
+            template = user_input.split(" ", 1)[1]
+            generate(template)
+        
+        elif user_input == "scan":
+            scan()
+        
+        elif user_input == "monitor":
+            monitor()
+        
         else:
-            # Execute shell commands and auto-detect errors
+            # Execute shell commands
             result = subprocess.run(user_input, shell=True, capture_output=True, text=True)
             if result.returncode != 0:
                 print("🚨 Error Detected! Run 'fix' to get help.")
+
+if __name__ == "__main__":
+    main()
