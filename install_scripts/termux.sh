@@ -6,6 +6,8 @@ case $TOOL in
         pkg install git ;;
     "docker")
         pkg install docker ;;
+    "python")
+        pkg install python ;;
     *)
-        echo "AutoDev: Tool not supported in Termux" ;;
+        echo "Tool not supported in Termux" ;;
 esac
