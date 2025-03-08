@@ -31,6 +31,12 @@ def install(tool):
     """OS-agnostic tool installation."""
     os_type = subprocess.check_output("uname", shell=True).decode().strip().lower()
     script = f"install_scripts/{os_type}.sh"
+    # In the install() function:
+os_type = subprocess.check_output("uname", shell=True).decode().strip().lower()
+
+# Add Termux detection
+if "termux" in os.environ.get("PREFIX", ""):
+    os_type = "termux"
     
     if not os.path.exists(script):
         print(f"AutoDev: Unsupported OS: {os_type}")
