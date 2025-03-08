@@ -3,9 +3,9 @@ TOOL=$1
 
 case $TOOL in
     "docker")
-        sudo apt-get update && sudo apt-get install -y docker.io ;;
+        sudo apt install -y docker.io ;;
     "terraform")
-        sudo apt-get install -y terraform ;;
+        sudo apt install -y terraform ;;
     *)
-        echo "AutoDev: Tool not recognized." ;;
+        echo "Tool not supported" ;;
 esac
