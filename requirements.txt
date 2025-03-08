@@ -1,2 +1,7 @@
 requests
 prompt-toolkit
+psutil
+flask
+speechrecognition
+pyaudio
+bandit
