@@ -4,6 +4,7 @@ import subprocess
 import requests
 from datetime import datetime
 from prompt_toolkit import prompt
+import speech_recognition as sr  # For voice commands
 
 # Load config
 CONFIG_PATH = os.path.expanduser("~/.autodev/config.json")
@@ -60,8 +61,8 @@ def generate(template):
     """Generate IaC templates"""
     if template == "docker":
         subprocess.run(f"cp templates/Dockerfile .", shell=True)
-    elif template == "terraform":
-        subprocess.run(f"cp -r templates/terraform .", shell=True)
+    elif template == "k8s":
+        subprocess.run(f"cp templates/kubernetes.yml .", shell=True)
     else:
         print("Template not found")
 
@@ -77,14 +78,54 @@ def monitor():
     import psutil
     print(f"CPU: {psutil.cpu_percent()}% | Memory: {psutil.virtual_memory().percent}%")
 
+def listen():
+    """Convert speech to text"""
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening...")
+        audio = recognizer.listen(source)
+    try:
+        return recognizer.recognize_sphinx(audio)  # Offline mode
+    except sr.UnknownValueError:
+        return ""
+
 def main():
     print("AutoDev Assistant Ready 🤖")
-    print("Commands: install <tool>, fix <error>, generate <template>, scan, monitor")
+    print("Commands: install <tool>, fix <error>, generate <template>, scan, monitor, voice")
     
     while True:
         user_input = prompt(">> ")
         
-        if user_input.startswith("install "):
+        # Voice command activation
+        if user_input == "voice":
+            print("Say a command (e.g., 'Install Docker')...")
+            voice_command = listen().lower()
+            print(f"Recognized: {voice_command}")
+            
+            if "install" in voice_command:
+                tool = voice_command.split()[-1]
+                install(tool)
+            
+            elif "generate" in voice_command:
+                template = voice_command.split()[-1]
+                generate(template)
+            
+            elif "fix" in voice_command:
+                error = " ".join(voice_command.split()[1:])
+                print(auto_fix(error))
+            
+            elif "scan" in voice_command:
+                scan()
+            
+            elif "monitor" in voice_command:
+                monitor()
+            
+            else:
+                print(f"Executing: {voice_command}")
+                subprocess.run(voice_command, shell=True)
+        
+        # Text command handlers
+        elif user_input.startswith("install "):
             tool = user_input.split(" ", 1)[1]
             install(tool)
         
