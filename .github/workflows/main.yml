@@ -1,0 +1,11 @@
+# Example: .github/workflows/ci.yml
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: "AutoDev: Fix Code Issues"
+        run: |
+          curl -X POST -H "Content-Type: application/json" \
+          -d '{"error": "linting errors"}' \
+          http://your-autodev-server:5000/fix
