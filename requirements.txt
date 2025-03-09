@@ -5,5 +5,4 @@ flask
 speechrecognition
 pyaudio
 bandit
-portaudio19-dev 
-python3-dev
+
